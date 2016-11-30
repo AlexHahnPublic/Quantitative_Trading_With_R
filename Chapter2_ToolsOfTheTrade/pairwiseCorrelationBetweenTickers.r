@@ -99,3 +99,4 @@ missing_rows <- filter_prices(prices)
 # Compute correlations
 correlation_matrix <- compute_pairwise_correlations(prices)
 correlation_matrix
+
