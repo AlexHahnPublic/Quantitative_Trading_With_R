@@ -85,7 +85,7 @@ compute_pairwise_correlations <- function(prices) {
 symbols <- c("IBM", "XOM", "2SG", "TEva", "GOog", "CVX", "AAPL", "BA")
 
 # Location of our database of prices (csv file)
-file_path = "~/Coding/R/Quantitative_Trading_With_R/Chapter2_ToolsOfTheTrade"
+file_path = "~/Coding/R/Quantitative_Trading_With_R/Chapter2_ToolsOfTheTrade/Adj_close.csv"
 
 # Filter and sort symbols
 filtered_symbols <- filter_symbols(symbols)
