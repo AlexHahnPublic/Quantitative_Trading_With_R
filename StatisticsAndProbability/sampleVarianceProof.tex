@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage{amsmath}
+
+\title{sampleVarianceProof}
+\author{Alex Hahn}
+\begin{document}
+\maketitle
+
+\begin{align}
+E[s^2_{biased}] &= E\left[\frac{1}{N}\sum^N_{i=1}(x_i-\bar{x})^2\right]=E\left[\frac{1}{N}\sum^N_{i=1}\left(x_i - \frac{1}{N}\sum^N_{j=1}x_j\right)^2\right] \nonumber\\
+&= \frac{1}{N}\sum^N_{i=1}\left[x_i^2 - \frac{2}{N}x_i\sum^N_{j=1}x_j + \frac{1}{N^2}\sum^N_{j=1}x_j\sum^N_{k=1}x_k\right] \nonumber\\
+&= \frac{1}{N}\sum^N_{i=i}\left[\frac{N-2}{N}E[x^2_i]-\frac{2}{N}\sum_{j\not=i}E[x_ix_j] + \frac{1}{N^2}\sum^N_{j=1}\sum_{k\not=j}E[x_jx_k] + \frac{1}{N^2}\sum^N_{j=1}E[x_j^2]\right] \nonumber\\
+&= \frac{1}{N}\sum^N_{i=1}\left[\frac{N-2}{N}(\sigma^2+\mu^2)=\frac{2}{N}(N-1)\mu^2 + \frac{1}{N^2}N(N-1)\mu^2 + \frac{1}{N}(sigma^2+\mu^2)\right] \nonumber\\
+&= \frac{N-1}{N}\sigma^2 \nonumber\\
+\end{align}
+
+By using the $N-1$ in the denominator instead of $N$, we eliminate the extra multiplicative term $\frac{N-1}{N}$
+
+\begin{align}
+  E[s^2] &= E\left[\frac{1}{N-1}\sum^N_{i=1}(x_i-\bar{x})^2\right]=\sigma^2
+\end{align}
+
+We can reason that the $N-1$ term in the demoninator servers to boost the numerical result enough to compensate for the defree of freedom (one degree used for the mean, rest for var)
+
+Note that although this type of reasoning works for simple examples where the definition of the estimate of the sample mean and variance appear this is not the case with even slightly more
+complicated examples. Eg considet the unbiased estimator of the population standard deviation, it is not simply the square root of the unbiased variance estimator:
+
+
+\begin{align}
+  s\not=\frac{\sqrt{\frac{\sum^N_i(X_i-\mu)^2}{N-1}}}{c_4}
+\end{align}
+
+
+The formula for the correction factor $c_4$ is given by
+
+\begin{align}
+  c_4=\sqrt{\frac{2}{N-1}}\frac{\Gamma(\frac{N}{2})}{\Gamma(\frac{N-1}{2})}
+\end{align}
+
+Where the gamma function $\Gamma(t)$ is given by
+
+\begin{align}
+  \Gamma(t) = \int_{0}^{\infty} x^{t-1}e^{-x}dx
+\end{align}
+
+where for positive integers N the gamma function becomes
+\begin{align}
+  \Gamma(N)=(N-1)!
+\end{align}
+
+This $c_4$ correction factor is a direct consequence of Jensen's Inequality (the secant line of a convex function lies above the fraph of the convex function) therefore allowing us to easily prove that the expectation of a convex
+function is greater than the function of the expectation: $E(f(x)) \geq f(E(x))$
+
+
+
+\end{document}

@@ -1,0 +1,33 @@
+\documentclass{article}
+\usepackage{amsmath}
+
+\title{LogReturnApproximationProof}
+\author{Alex Hahn}
+\begin{document}
+\maketitle
+
+For small enough percentage returns log returns provide a decent approximation of return with nice mathematical properties.
+\begin{align}
+  R_t = \frac{P_t - t_{t-1}}{P_{t-1}} \nonumber\\
+  =\frac{P_t}{P_{t-1}} - 1 \nonumber\\
+\end{align}
+
+The Taylor expansion for log(1+x) is
+\begin{align}
+  log(1+x) = x - \frac{x^2}{2} + \frac{x^3}{3} + O(x^4) \nonumber\\
+\end{align}
+
+Consider what happens when x is a small number:
+\begin{align}
+  log(1+x) \approx x
+\end{align}
+
+Substituting $R_t$ forr $x$ gives us $log(1_+R_t) \approx R_t$
+\begin{align}
+  log\left(1+\frac{P_t}{P_{t-1}}-1\right) \approx R_t \nonumber\\
+  log\left(\frac{P_t}{P_{t-1}}\right) = log(P_t)- log(P_{t-1})\approx R_t \nonumber\\
+\end{align}
+
+
+
+\end{document}

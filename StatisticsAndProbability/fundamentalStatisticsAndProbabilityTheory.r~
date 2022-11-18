@@ -1,0 +1,15 @@
+#####################################################################
+############# Fundamental Statistic and Probabilities ###############
+#####################################################################
+
+# Demonstration of the convergence property of the law of large numbers
+
+
+# Create a population of 1,000,000 random numbers from a Gaussian distribution defined with mean=2.33 and sd=0.5
+set.seed(100)
+X <- rnorm(1000000, mean = 2.33, sd = 0.5)
+
+mu <- mean(X)
+df <- sd(X)
+hist(X,breaks = 100)
+abline(v = mu, lwd = 3, lty= 2)

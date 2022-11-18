@@ -1,0 +1,12 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{sampleVarianceProof}
+\begin{document}
+\maketitle
+
+\[
+E[s^2_{biased} = ]
+\]
+
+\end{document}

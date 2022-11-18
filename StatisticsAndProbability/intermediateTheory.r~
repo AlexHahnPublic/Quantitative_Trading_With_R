@@ -1,0 +1,50 @@
+#####################################################################
+############ Intermediate Theory for Statistical Trading ############
+#####################################################################
+
+library(lubridate)
+library(quantmod)
+
+#Todo: make candles retrieval into a simple function call, book one is broken and shouldn't repeat this too much
+# Examine distributions of SPY
+stock_list <- c("SPY")#, "GOOG") # add more symbols here
+start_date <- ymd(20070101)#Sys.Date()-5000
+end_date <- ymd(20140101)#Sys.Date()
+master_df <- NULL
+for (idx in seq(length(stock_list))){
+    stock_index <- stock_list[idx]
+    getSymbols(stock_index, verbose = TRUE, src = "yahoo",
+               from=start_date,to=end_date)
+    temp_df <- as.data.frame(get(stock_index))
+    temp_df$Date <- row.names(temp_df)
+    temp_df$Index <- stock_index
+    row.names(temp_df) <- NULL
+    colnames(temp_df) <- c("Open", "High", "Low", "Close",
+                           "Volume", "Adjusted", "Date", "Index")
+    temp_df <- temp_df[c("Date", "Index", "Open", "High",
+                        "Low", "Close", "Volume", "Adjusted")]
+    SPY <- rbind(master_df, temp_df)
+
+    SPY$Date <- ymd(SPY$Date)
+    SPY <- xts(SPY[,-1], order.by=SPY[,1]) #converting to xts, note there is some more complexity here to actually use
+}
+
+# Basic statistics
+prices <- as.double(SPY$Adjusted)
+mean_prices <- round(mean(prices, na.rm=TRUE), 2)
+sd_prices <- round(sd(prices, na.rm=TRUE), 2)
+
+pdf("hist_SPY_Prices_2007_2014.pdf")
+hist(prices, breaks=100,prob=T, cex.main=0.9)
+abline(v = mean_prices, lwd=2)
+legend("topright", cex = 0.8, border = NULL, bty="n",
+       paste("mean=", mean_prices, "; sd=", sd_prices))
+dev.off()
+
+# let's examine these mean and sd characterized distrubution in 4 distinct and disjoint periods
+plot_4_ranges <- function(date, start, end, title) {
+    # Set the plot window to be 2 rows and 2 columns
+    par(mfrow = c(2,2))
+
+    for (i in 1:4) {
+        # Create a string with the appropriate date range

@@ -6,6 +6,7 @@
 #----------------------------------------------------------
 # Given dates and ticker names as inputs, create an Adj_close.csv output file
 # of each tickers yahoo finance adj close prices for that interval
+# Note, this code is not in the book
 
 #TODO list:
 #----------------------------------------------------------
@@ -45,4 +46,3 @@ between: ")
 
     # Output the Adj_Close .csv containing all tickers
     yahoo_finance_data["Adj Close"].to_csv("Adj_close.csv")
-

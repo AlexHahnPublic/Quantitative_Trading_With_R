@@ -4,7 +4,7 @@
 
 # Purpose
 # -------------------------------------------------------------------
-# Simple Commands using R, syntax review, common data containers
+# Simple Commands using R, syntax review, common data containers, basic R review
 #
 # Note that I will often call the variable immediately after assigning it in
 # order to print to the console (the file can be executed with Rscript filename
@@ -394,5 +394,3 @@ for(z in c("hello", "goodbye")) {
   some_list[[z]] <- z
 }
 some_list
-
-
