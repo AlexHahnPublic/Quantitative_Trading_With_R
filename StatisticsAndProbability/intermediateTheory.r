@@ -188,7 +188,6 @@ hist(spy_returns, breaks=100,
 lines(x, dnorm(x, mu, sigma), col = "red", lwd=2)
 dev.off()
 
-<<<<<<< HEAD
 pdf("spyLeptokyriticReturnsQQLine.pdf")
 par(mfrow=c(1,2))
 
@@ -202,23 +201,6 @@ grid()
 # Normal distribution data
 normal_data <- rnorm(nrow(spy_returns), mean = mu, sd = sigma)
 qqnorm(normal_data, main = "Normal returns", cex.main=0.8)
-qqline(normal_data, lwd=2)
-grid()
-dev.off()
-=======
-pdf("normalDistributionVsSpyReturns.pdf")
-par(mfrow=c(1,2))
-
-# SPY
-qqnorm(as.numeric(spy_returns),
-       main="SPY empirical returns qqplot()",
-       cex.main=0.8)
-qqline(as.numeric(spy_returns), lwd=2)
-grid()
-
-# Normal
-normal_data <- rnorm(nrow(spy_returns), mean=mu, sd=sigma)
-qqnorm(normal_data, main="Normal returns", cex.main=0.8)
 qqline(normal_data, lwd=2)
 grid()
 dev.off()
@@ -310,4 +292,37 @@ qqline(lin.reg$residuals)
 acf(lin.reg$residuals,
     main = "Autocorrelation")
 dev.off()
->>>>>>> bca93761c3f5203876807a21adfbfc6e7125e871
+
+# Explore whether there is a linear relationship between yesterday's return and today's.
+# note, lag() requires a time series so lets make our input date a time series first:
+
+SPY.ts <- xts(m[,c("SPYCloseReturn")], order.by = ymd(m[,c("Date")]))
+SPY.ts.lagged <- lag(SPY.ts, k=1)
+
+VIX.ts <- xts(m[,c("VIXCloseReturn")], order.by = ymd(m[,c("Date")]))
+
+
+# scatterplot of lagged SPY vs VIX
+pdf("laggedSPYvsVIXReturns.pdf")
+plot(as.numeric(SPY.ts.lagged), as.numeric(VIX.ts),
+     main = "Scatter plot of SPY lagged vs VXX",
+     xlab = "SPY Return lagged",
+     ylab = "VXX Return",
+     cex.main = 0.8,
+     cex.axis = 0.8,
+     cex.lab = 0.8)
+grid()
+dev.off()
+
+lagged.lm <- lm(VIX.ts ~ SPY.ts.lagged)
+
+# note that lagging VIX and checking if it is a leading indicator of SPY returns similar results
+# we can perform this analysis quickly with the ccf() function. similar to the acf() function,
+# but it takes two time series and returns their various lagged pairwise correlations
+
+pdf("crossCorrelationLagsVIXvsSPY.pdf")
+ccf(as.numeric(SPY.ts), as.numeric(VIX.ts),
+    main = "Cross correlation between SPY and VXX",
+    ylab = "Cross correlation", xlab = "Lag", cex.main = 0.8,
+    cex.lab = 0.8, cex.axis = 0.8)
+dev.off()
