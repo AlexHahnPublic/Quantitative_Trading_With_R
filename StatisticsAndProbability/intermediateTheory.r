@@ -141,3 +141,20 @@ hist(spy_returns, breaks=100,
      cex.main = 0.8, prob=TRUE)
 lines(x, dnorm(x, mu, sigma), col = "red", lwd=2)
 dev.off()
+
+pdf("spyLeptokyriticReturnsQQLine.pdf")
+par(mfrow=c(1,2))
+
+#SPY data
+qqnorm(as.numeric(spy_returns),
+       main="SPY empirical returns qqplot()",
+       cex.main = 0.8)
+qqline(as.numeric(spy_returns), lwd=2)
+grid()
+
+# Normal distribution data
+normal_data <- rnorm(nrow(spy_returns), mean = mu, sd = sigma)
+qqnorm(normal_data, main = "Normal returns", cex.main=0.8)
+qqline(normal_data, lwd=2)
+grid()
+dev.off()
