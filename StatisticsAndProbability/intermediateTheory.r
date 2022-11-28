@@ -30,6 +30,51 @@ for (idx in seq(length(stock_list))){
     SPY <- xts(SPY[,-1], order.by=SPY[,1]) #converting to xts, note there is some more complexity here to actually use
 }
 
+#spy_vxx <- getSymbols(c("SPY","VXX"),from = as.Date("2009-01-01"), to = as.Date("2014-01-01"))
+
+
+## stock_list_VXX <- c("^VXX")
+
+## master_df_VXX <- NULL
+## for (idx in seq(length(stock_list_VXX))){
+##     stock_index <- stock_list_VXX[idx]
+##     getSymbols(stock_index, verbose = TRUE, src = "yahoo",
+##                from=start_date,to=end_date)
+##     temp_df <- as.data.frame(get(stock_index))
+##     temp_df$Date <- row.names(temp_df)
+##     temp_df$Index <- stock_index
+##     row.names(temp_df) <- NULL
+##     colnames(temp_df) <- c("Open", "High", "Low", "Close",
+##                            "Volume", "Adjusted", "Date", "Index")
+##     temp_df <- temp_df[c("Date", "Index", "Open", "High",
+##                         "Low", "Close", "Volume", "Adjusted")]
+##     VXX <- rbind(master_df, temp_df)
+
+##     VXX$Date <- ymd(VXX$Date)
+##     VXX <- xts(VXX[,-1], order.by=VXX[,1]) #converting to xts, note there is some more complexity here to actually use
+## }
+
+
+## for (idx in seq(length(stock_list))){
+##     stock_index <- stock_list[idx]
+##     getSymbols(stock_index, verbose = TRUE, src = "yahoo",
+##                from=start_date,to=end_date)
+##     temp_df <- as.data.frame(get(stock_index))
+##     temp_df$Date <- row.names(temp_df)
+##     temp_df$Index <- stock_index
+##     row.names(temp_df) <- NULL
+##     colnames(temp_df) <- c("Open", "High", "Low", "Close",
+##                  x          "Volume", "Adjusted", "Date", "Index")
+##     temp_df <- temp_df[c("Date", "Index", "Open", "High",
+##                         "Low", "Close", "Volume", "Adjusted")]
+##     SPY <- rbind(master_df, temp_df)
+
+##     SPY$Date <- ymd(SPY$Date)
+##     SPY <- xts(SPY[,-1], order.by=SPY[,1]) #converting to xts, note there is some more complexity here to actually use
+## }
+
+
+
 # Basic statistics
 prices <- as.double(SPY$Adjusted)
 mean_prices <- round(mean(prices, na.rm=TRUE), 2)
@@ -139,5 +184,111 @@ pdf("spyLeptokyriticDistributedReturns.pdf")
 hist(spy_returns, breaks=100,
      main ="Histogram of SPY returns",
      cex.main = 0.8, prob=TRUE)
+
 lines(x, dnorm(x, mu, sigma), col = "red", lwd=2)
+dev.off()
+
+pdf("normalDistributionVsSpyReturns.pdf")
+par(mfrow=c(1,2))
+
+# SPY
+qqnorm(as.numeric(spy_returns),
+       main="SPY empirical returns qqplot()",
+       cex.main=0.8)
+qqline(as.numeric(spy_returns), lwd=2)
+grid()
+
+# Normal
+normal_data <- rnorm(nrow(spy_returns), mean=mu, sd=sigma)
+qqnorm(normal_data, main="Normal returns", cex.main=0.8)
+qqline(normal_data, lwd=2)
+grid()
+dev.off()
+
+# example of outliers effect on deviance from normality
+set.seed(129)
+normal.numbers <- rnorm(5000,0,1)
+correct.shapiro.test <- shapiro.test(normal.numbers)
+
+# Corrupt a single point, as if jsut manually entered/ input wrong
+normal.numbers[50] <- 1000 #with a distribution centered around 0 with a sd of 1 (and 5000 points) a single point of 1000 is crazy unlikely
+failed.shapiro.test <- shapiro.test(normal.numbers)
+
+SPY.df <- read.csv("SPY.csv")
+VIX.df <- read.csv("VIX.csv")
+SPY.df$Date <- ymd(SPY.df$Date)
+VIX.df$Date <- ymd(VIX.df$Date)
+
+SPY.df$SPYCloseReturn <- c(0,diff(log(as.double(SPY.df$Close))))
+VIX.df$VIXCloseReturn <- c(0,diff(log(as.double(VIX.df$Close))))
+
+# manually enter two outliers for vix
+VIX.df$VIXCloseReturn[50] <- 1.8 # a 180% return
+VIX.df$VIXCloseReturn[1000] <- 2.1 # a 210% return
+
+m <- merge(SPY.df,VIX.df,by="Date")
+
+rets <- m[,c("Date", "SPYCloseReturn","VIXCloseReturn"),]
+
+# for identifying outliers:
+outliers <- which(VIX.df$VIXCloseReturn > 1.0)
+
+#Scatter plot with outliers
+pdf("SPYvsVIXWithOutliers.pdf")
+plot(m$SPYCloseReturn, m$VIXCloseReturn)
+dev.off()
+
+# A negative 60% correlation, which makes sense
+cor.with.outliers <- cor(m$SPYCloseReturn, m$VIXCloseReturn)
+
+# filter outliers to see what happens to correlation:
+if(length(outliers) > 0) {
+    m <- m[-outliers,]
+}
+
+# Scatter plot without outliers
+pdf("SPYvsVIXWithoutOutliers.pdf")
+plot(m$SPYCloseReturn, m$VIXCloseReturn)
+dev.off()
+
+#increases to -81% (the outliers were only in VIX space, removing them resulted in a stronger negative correlation)
+cor.without.outliers <- cor(m$SPYCloseReturn, m$VIXCloseReturn)
+
+# for a correlation matrix simply enter only the numeric columns aand all pairwise (and symmetric) correlations will be computed
+cor.matrix <- cor(m[,c("SPYCloseReturn", "VIXCloseReturn")])
+
+#create a linear regression of spy and vix close returns:
+lin.reg <- lm(VIXCloseReturn ~ SPYCloseReturn, data = m)
+
+
+#summary(lin.reg) returns all the relevant statistics
+
+# Collecting the coeefficients (intercept and slope)
+intercept  <- lin.reg$coefficients[1]
+slope <- lin.reg$coefficients[2]
+
+# a simple way of superimposing the line of best fit on the scatter plot (I have more advanced linear plotting with stats on the chart elsewhere)
+pdf("SPYvsVIXsLinearFit.pdf")
+plot(m$SPYCloseReturn, m$VIXCloseReturn)
+abline(a=intercept, b=slope)
+abline(h=0)
+abline(v=0)
+dev.off()
+
+# Diagnostic plot of the residuals to examine
+
+pdf("SPYvsVIXsResiduals.pdf")
+par(mfrow=c(2,2))
+plot(lin.reg$residuals,
+     main = "Residuals through time",
+     xlab = "Days",
+     ylab = "Residuals")
+hist(lin.reg$residuals, breaks=100,
+     main = "Distribution of residuals", #to check normality
+     xlab = "Residuals"
+     )
+qqnorm(lin.reg$residuals)
+qqline(lin.reg$residuals)
+acf(lin.reg$residuals,
+    main = "Autocorrelation")
 dev.off()
