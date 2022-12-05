@@ -188,19 +188,19 @@ hist(spy_returns, breaks=100,
 lines(x, dnorm(x, mu, sigma), col = "red", lwd=2)
 dev.off()
 
-pdf("normalDistributionVsSpyReturns.pdf")
+pdf("spyLeptokyriticReturnsQQLine.pdf")
 par(mfrow=c(1,2))
 
-# SPY
+#SPY data
 qqnorm(as.numeric(spy_returns),
        main="SPY empirical returns qqplot()",
-       cex.main=0.8)
+       cex.main = 0.8)
 qqline(as.numeric(spy_returns), lwd=2)
 grid()
 
-# Normal
-normal_data <- rnorm(nrow(spy_returns), mean=mu, sd=sigma)
-qqnorm(normal_data, main="Normal returns", cex.main=0.8)
+# Normal distribution data
+normal_data <- rnorm(nrow(spy_returns), mean = mu, sd = sigma)
+qqnorm(normal_data, main = "Normal returns", cex.main=0.8)
 qqline(normal_data, lwd=2)
 grid()
 dev.off()
@@ -293,6 +293,8 @@ acf(lin.reg$residuals,
     main = "Autocorrelation")
 dev.off()
 
+#did this twice on two different machines, all good
+
 # Convert SPY and VIX returns to xts objects explicitly for lag function
 vix.rets <- xts(m[,c("VIXCloseReturn")], order.by = m$Date)
 spy.rets <- xts(m[,c("SPYCloseReturn")], order.by = m$Date)
@@ -305,7 +307,23 @@ colnames(m.lag) <- c("VIX.Rets","SPY.Rets.Lagged")
 # scatterplot of lagged spy rets vs vix rets
 pdf("lagSPYvsVIX.pdf")
 plot(as.numeric(m.lag$SPY.Rets.Lagged),as.numeric(m.lag$VIX.Rets),
-     main = "Scatter plot of spy lagged rets vs vix rets",
+     main = "Scatter plot of spy lagged rets vs vix rets")
+
+# Explore whether there is a linear relationship between yesterday's return and today's.
+# note, lag() requires a time series so lets make our input date a time series first:
+
+SPY.ts <- xts(m[,c("SPYCloseReturn")], order.by = ymd(m[,c("Date")]))
+SPY.ts.lagged <- lag(SPY.ts, k=1)
+
+VIX.ts <- xts(m[,c("VIXCloseReturn")], order.by = ymd(m[,c("Date")]))
+
+
+# scatterplot of lagged SPY vs VIX
+pdf("laggedSPYvsVIXReturns.pdf")
+plot(as.numeric(SPY.ts.lagged), as.numeric(VIX.ts),
+     main = "Scatter plot of SPY lagged vs VXX",
+     xlab = "SPY Return lagged",
+     ylab = "VXX Return",
      cex.main = 0.8,
      cex.axis = 0.8,
      cex.lab = 0.8)
@@ -348,3 +366,37 @@ dev.off()
 new.stats <- summary(reg_parabola_trans)
 
 # Finding these transformations is part of the task in finding indicators
+lagged.lm <- lm(VIX.ts ~ SPY.ts.lagged)
+
+# note that lagging VIX and checking if it is a leading indicator of SPY returns similar results
+# we can perform this analysis quickly with the ccf() function. similar to the acf() function,
+# but it takes two time series and returns their various lagged pairwise correlations
+
+pdf("crossCorrelationLagsVIXvsSPY.pdf")
+ccf(as.numeric(SPY.ts), as.numeric(VIX.ts),
+    main = "Cross correlation between SPY and VXX",
+    ylab = "Cross correlation", xlab = "Lag", cex.main = 0.8,
+    cex.lab = 0.8, cex.axis = 0.8)
+dev.off()
+
+# generate 1000 IID numbers from a normal distribution
+z <- rnorm(1000, 0, 1)
+
+# autocorrelation of returns and squared returns
+pdf("autoCorrelationIIDReturnsvsSquaredReturns.pdf")
+par(mfrow = c(2,1))
+acf(z, main = "iid returns", cex.main = 0.8,
+    cex.lab = 0.8,
+    cex.axis = 0.8)
+grid()
+acf(z^2, main = "iid returns squared",
+    cex.lab = 0.8, cex.main = 0.8, cex.axis = 0.8)
+grid()
+dev.off()
+
+pdf("actuallReturnsSquaredACF.pdf")
+par(mfrow=c(2,1))
+acf(m$SPYCloseReturn^2, main = "Actual returns squared",
+    cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8)
+grid()
+dev.off()
