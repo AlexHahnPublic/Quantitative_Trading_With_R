@@ -292,3 +292,59 @@ qqline(lin.reg$residuals)
 acf(lin.reg$residuals,
     main = "Autocorrelation")
 dev.off()
+
+# Convert SPY and VIX returns to xts objects explicitly for lag function
+vix.rets <- xts(m[,c("VIXCloseReturn")], order.by = m$Date)
+spy.rets <- xts(m[,c("SPYCloseReturn")], order.by = m$Date)
+
+# using a lag is a common way to check whether contemperaneous time series predict eachother in anyway
+# first let's simply check whether SPY indicates anything about tomorrows VIX return:
+m.lag <- merge(vix.rets, lag(spy.rets, k = -1))
+colnames(m.lag) <- c("VIX.Rets","SPY.Rets.Lagged")
+
+# scatterplot of lagged spy rets vs vix rets
+pdf("lagSPYvsVIX.pdf")
+plot(as.numeric(m.lag$SPY.Rets.Lagged),as.numeric(m.lag$VIX.Rets),
+     main = "Scatter plot of spy lagged rets vs vix rets",
+     cex.main = 0.8,
+     cex.axis = 0.8,
+     cex.lab = 0.8)
+grid()
+dev.off()
+
+# visually there does not seem to be a relationship, double check with lm
+lm.check <- lm(VIX.Rets ~ SPY.Rets.Lagged, data = m.lag)
+
+# we can check the reverse lagging procedure or even take different lags, or simply
+# use the ccf function which takes two time series and computes the pairwise cross correlations across lags
+pdf("crossCorrelationFucntion_SPYvsVIX.pdf")
+ccf.spy.vix <- ccf(as.numeric(vix.rets), as.numeric(spy.rets),
+                   main = "Cross Correlation function of SPY vs VIX",
+                   cex.main = 0.8,
+                   cex.lab = 0.8,
+                   cex.axis = 0.8)
+dev.off()
+
+
+# Example that linear relation modeling will only pick up linear relationships!
+x <- seq(1:100)
+y <- x^2
+
+pdf("nonLinearRelationExample.pdf")
+plot(x,y)
+reg_parabola <- lm(y~x)
+abline(reg_parabola, lwd=2)
+dev.off()
+
+stats <- summary(reg_parabola)
+
+# However a transformation of the dependant variable here will show the relation
+pdf("nonLinearRelationTransformationExample.pdf")
+plot(x,sqrt(y))
+reg_parabola_trans <- lm(sqrt(y)~x)
+abline(reg_parabola_trans, lwd=2)
+dev.off()
+
+new.stats <- summary(reg_parabola_trans)
+
+# Finding these transformations is part of the task in finding indicators
