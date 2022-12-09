@@ -400,3 +400,6 @@ acf(m$SPYCloseReturn^2, main = "Actual returns squared",
     cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8)
 grid()
 dev.off()
+
+# squared returns are a proxy for dispersion/ variance, these actual returns exhibit clear relationships in higher order moments
+# various heirarchies of econometric models have been proposed to account for this autocorrelation structure in higher moments see: ARIMA, GARCH, Stochastic Volatility

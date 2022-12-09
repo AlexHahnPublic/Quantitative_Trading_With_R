@@ -1,0 +1,99 @@
+library(quantmod)
+library(xts)
+
+# only need to load in once. uncomment, run, comment again, don't overwrite objects, avoid waiting for network IO
+## pepsi <- getSymbols("PEP", from = "2013-01-01",
+##                     to = "2014-01-01", adjust = TRUE, auto.assign = FALSE, src = "yahoo")
+
+## coke <- getSymbols("COKE", from = "2013-01-01",
+##                    to = "2014-01-01", adjust = TRUE, auto.assign = FALSE, src="yahoo")
+
+Sys.setenv(TZ = "UTC")
+
+#prices <- cbind(pepsi[,6], coke[,6])
+prices <- cbind(pepsi[,c("PEP.Adjusted")], coke[,c("COKE.Adjusted")]) # I think this is better form, don't use col index numbers
+
+price_changes <- apply(prices, 2, diff)
+
+pdf("cokeVsPepsiPriceChanges.pdf")
+plot(price_changes[,c("PEP.Adjusted")], price_changes[,c("COKE.Adjusted")],
+     xlab = "Coke price changes",
+     ylab = "PEP price changes",
+     main = "Pepsi vs Coke price changes",
+     cex.main = 0.8,
+     cex.lab = 0.8,
+     cex.axis = 0.8)
+grid()
+dev.off()
+
+ans <- lm(price_changes[,c("PEP.Adjusted")] ~ price_changes[,c("COKE.Adjusted")])
+beta <- ans$coefficients[2]
+
+# Although similar the price change of Coke (dependendant) as explained by the price change in PEP (now independant) is
+ans2 <- lm(price_changes[,c("COKE.Adjusted")] ~ price_changes[,c("PEP.Adjusted")])
+beta2 <- ans2$coefficients[2]
+
+# Notice that you could proxy this by taking the inverse of the slope coeff but running the actual regression again is not the same
+# A Total least squares regression  alleviates this by attempting to explain the variability of a system in terms of both timeseries
+
+# Example for SPY vs AAPL price difference principal components (similary comment/uncomment to load once as above)
+## SPY <- getSymbols('SPY', from = '2011-01-01', to = '2012-12-31', adjust = TRUE, auto.assign = FALSE)
+## AAPL <- getSymbols('AAPL', from = '2011-01-01', to = '2012-12-31', adjust = TRUE, auto.assign = FALSE)
+
+spy.x <- diff(as.numeric(SPY[,c("SPY.Close")]))
+aapl.y <- diff(as.numeric(AAPL[,c("AAPL.Close")]))
+
+pdf("principalComponentTotalLeastSquaresSPYvsAAPL.pdf")
+plot(spy.x, aapl.y, main = "Principal Component Total Least Squares regression SPY vs AAPL price diffs",
+     cex.main = 0.8,
+     cex.lab = 0.8,
+     cex.axis = 0.8)
+abline(lm(aapl.y~spy.x))
+abline(lm(spy.x~aapl.y), lty = 2)
+grid()
+
+# Total least squares regression
+r <- prcomp(~ spy.x + aapl.y)
+slope <- r$rotation[2, 1] / r$rotation[1,1]
+intercept <- r$center[2] - slope * r$center[1]
+
+# first principal component on plot
+abline(a = intercept, b = slope, lty = 3)
+dev.off()
+
+# A simple trading model based on buying the spread when it is below a certain threshold, and selling the spread when it is above a certain threshold
+
+# Function to calculate the spread
+calculate_spread <- function(x, y, beta){
+    return(y - beta*x)
+}
+
+# Function to calculate the beta and leve given start and end dates
+calculate_beta_and_level <- function(x, y, start_date, end_date) {
+    time_range <- paste(start_date, "::", end_date, sep="")
+
+    x <- x[time_range] # assumes we originally have a wider set of data...
+    y <- y[time_range]
+
+    dx <- diff(x[time_range]) #this seems redundant/ the subset does nothing since we just did it? but is in the book so leave for now
+    dy <- diff(y[tim_range])
+
+    r <- prcomp(~ dx + dy)
+
+    beta <- r$rotation[2,1] / r$rotation[1,1]
+    spread <- calculate_spread(x, y, beta)
+    names(spread) <- "spread"
+
+    level = mean(spread, na.rm = TRUE)
+
+    outL <- list()
+
+    outL$spread <- spread
+    outL$beta <- beta
+    outL$level <- levels
+
+    return(outL)
+}
+
+# Function to calculate buy and sell signals with upper and lower threshold
+calcu
