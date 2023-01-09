@@ -566,3 +566,75 @@ plot(data_out_return$equity.curve.x.spy + data_out_return$equity.curve.x.spy,
      )
 
 dev.off()
+
+# Calculate the Sharpe ratio
+sharpe.ratio <- function(x, rf) {
+    sharpe <- (mean(x, na.rm = TRUE) -rf) / sd(x, na.rm = TRUE)
+    return(sharpe)
+}
+
+# Calculate the the maximum drawdown profile
+drawdown <- function(x) {
+    #browser()
+    x[is.na(x)] <- 0
+    res <- cummax(x) - x
+    return(res)
+}
+
+pdf("sharpeAndDrawdown.pdf")
+par(mfrow = c(2,2))
+
+equity.curve.price <- data_out_price$equity.curve.x.spy + data_out_price$equity.curve.y.aapl
+equity.curve.return <- data_out_return$equity.curve.x.spy + data_out_return$equity.curve.y.aapl
+
+plot(equity.curve.price, main = "Price Spread Strat Equity Curve",
+     cex.main = 0.8,
+     cex.lab = 0.8,
+     cex.axis = 0.8
+     )
+
+plot(drawdown(equity.curve.price), main = "Drawdown of Price Spread Strat Equity Curve",
+     cex.main = 0.8,
+     cex.lab = 0.8,
+     cex.axis = 0.8
+     )
+
+plot(equity.curve.return, main = "Return Spread Strat Equity Curve",
+     cex.main = 0.8,
+     cex.lab = 0.8,
+     cex.axis = 0.8
+     )
+
+plot(drawdown(equity.curve.return), main = "Drawdown of Return Spread Strat Equity Curve",
+     cex.main = 0.8,
+     cex.lab = 0.8,
+     cex.axis = 0.8
+     )
+
+dev.off()
+
+
+e.price <- as.numeric(equity.curve.price[,1])
+
+equity.curve.price.returns <- diff(e.price) / e.price[-length(e.price)]
+
+# Remove any infinities and NaN
+invalid.values.price <- is.infinite(equity.curve.price.returns) | is.nan(equity.curve.price.returns)
+
+price.spread.sharpe <- sharpe.ratio(equity.curve.price.returns[!invalid.values.price], 0.03)
+
+
+
+e.return <- as.numeric(equity.curve.return[,1])
+
+equity.curve.return.returns <- diff(e.return) / e.return[-length(e.return)]
+
+# Remove any infinities and NaN
+invalid.values.return <- is.infinite(equity.curve.return.returns) | is.nan(equity.curve.return.returns)
+
+return.spread.sharpe <- sharpe.ratio(equity.curve.return.returns[!invalid.values.return], 0.03)
+
+omega_ratio <- function(r, T) {
+    omeaga <- mean(pmax(r - T, 0)) / mean(pmax(T - r, 0))
+    return(omega)
+}

@@ -1,0 +1,60 @@
+#####################################################################
+################ Backtesting with Quantsrat Framework ###############
+#####################################################################
+
+# Setting up quantstrat
+
+# surpress  warnings
+options("getSymbols.warnings4.0"=FALSE)
+
+# clean up environment
+#rm(list=ls(.blotter), envir = .blotter)
+
+# set the currency and timezone
+currency("USD")
+Sys.setenv(TZ="UTC")
+
+# Symbols of interest
+symbols <- c("XLB",
+             "XLF",
+             "XLP",
+             "XLI",
+             "XLU",
+             "XLV",
+             "XLK",
+             "XLY",
+             "RWR",
+             "EWJ",
+             "EWG",
+             "EWU",
+             "EWC",
+             "EWY",
+             "EWA",
+             "EWH",
+             "EWS",
+             "IYZ",
+             "EZU",
+             "IYR",
+             "EWT",
+             "EWZ",
+             "EFA",
+             "IGE",
+             "EPP",
+             "LQD",
+             "SHY",
+             "IEF",
+             "TLT"
+             )
+
+# SPDR ETFs first, iShares ETFs afterwards
+if(!"XLB" %in% ls()) {
+    #if data is not present, get it from yahoo
+    suppressMessages(getSybols(symbols,
+                               from = from,
+                               to = to,
+                               src = "yahoo",
+                               adjust = TRUE))
+}
+
+# Define the instrument type
+stock(sybols, currency = "USD", multiplier = 1)
