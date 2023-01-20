@@ -2,11 +2,14 @@
 ################ Backtesting with Quantsrat Framework ###############
 #####################################################################
 
+require(quantstrat)
+require(PerformanceAnalytics)
+
 # Setting up quantstrat
 
 # surpress  warnings
 options("getSymbols.warnings4.0"=FALSE)
-n
+
 # clean up environment
 #rm(list=ls(.blotter), envir = .blotter)
 
@@ -46,8 +49,8 @@ symbols <- c("XLB",
              "TLT"
              )
 
-from = "2003-01-01"
-to = "2013-12-31"
+from = "2002-01-01"
+to = "2015-12-31"
 
 # SPDR ETFs first, iShares ETFs afterwards
 if(!"XLB" %in% ls()) {
@@ -128,8 +131,7 @@ stock(symbols, currency = "USD", multiplier = 1)
 }
 
 # Strategy:
-require(quantstrat)
-require(PerformanceAnalytics)
+
 
 initDate = "1990-01-01"
 from = "2003-01-01"
@@ -240,18 +242,72 @@ add.rule(strategy.st, name = "ruleSignal",
 # get begin time
 t1 <- Sys.time()
 
+# only need to run this and generate tStats once, then don't rerun the sim everytime, just examine tStats
+# and rerun if new indicator/ signal / rule is added or one is changed
 out <- applyStrategy(strategy = strategy.st, portfolios = portfolio.st)
 
 # record end time
 t2 <- Sys.time()
-print(t2 - t1)
+#print(t2 - t1)
 
 updatePortf(portfolio.st)
 dateRange <- time(getPortfolio(portfolio.st)$summary)[-1]
 updateAcct(portfolio.st, dateRange)
 updateEndEq(account.st)
 
-tStats <- tradeStats(Portfolios = portfolio.st, use = "trades", inclZeroDays = FALSE)
+ tStats <- tradeStats(Portfolios = portfolio.st, use = "trades", inclZeroDays = FALSE)
 tStats[,4:ncol(tStats)] <- round(tStats[,4:ncol(tStats)], 2)
 
 #print(data.frame(t(tStats[,-c(1,2)])))
+
+aggPF <- sum(tStats$Gross.Profits)/ -sum(tStats$Gross.Losses)
+
+aggCorrect <- mean(tStats$Percent.Positive)
+
+numTrades <- sum(tStats$Num.Trades)
+
+meanAvgWLR <- mean(tStats$Avg.WinLoss.Ratio[
+                              tStats$Avg.Win.Trade < Inf], na.rm = TRUE)
+
+# return analystics
+
+instRets <- PortfReturns(account.st)
+
+portfRets <- xts(rowMeans(instRets) * ncol(instRets),
+                 order.by = index(instRets))
+
+portfRets <- portfRets[!is.na(portfRets)]
+
+cumPortfRets <- cumprod( 1 + portfRets)
+
+firstNonZeroDay <- as.character(index(portfRets)[
+    min(which(portfRets != 0))])
+
+#Obtain symbol
+getSymbols("SPY", from = firstNonZeroDay, to = to)
+SPYrets <- diff(log(Cl(SPY)))[-1]
+cumSPYrets <- cumprod(1 + SPYrets)
+comparison <- merge(cumPortfRets, cumSPYrets, all=FALSE) #note, this differs from the book, I pull wider dates in getSymbol usually than needed, so can't just assume they line up and cbind, merge bate date index instead
+colnames(comparison) <- c("strategy", "SPY")
+
+pdf("averageTrueRiskTrendFollowerIndicatorSignalRulesBacktestVSSPY.pdf")
+chart.TimeSeries(comparison, legend.loc = "topleft")
+##                  ,colors = c("green", "red"))
+dev.off()
+
+# Calculate risk metrics
+SharpeRatio.annualized(portfRets)
+Return.annualized(portfRets)
+maxDrawdown(portfRets)
+
+# print out some of these stats
+SharpeRatio.annualized(portfRets)
+Return.annualized(portfRets)
+maxDrawdown(portfRets)
+
+
+pdf("XLB_ATR_strategy_alysis.pdf")
+chart.Posn(portfolio.st, "XLB")
+tmp <- namedLag(Cl(XLB), k = nLag)
+add_TA(tmp$namedLag, col = "blue", on = 1)
+dev.off()

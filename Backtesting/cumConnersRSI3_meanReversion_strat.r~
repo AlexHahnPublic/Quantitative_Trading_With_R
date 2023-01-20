@@ -1,0 +1,75 @@
+#####################################################################
+######### Backtesting Mean Reversion Cum Conners RSI3 Strat #########
+#####################################################################
+
+
+# Rather than write this strategy in backtesting.r (like I do for most,
+# chapters, keep all in one file) I'm breaking this strategy backtest
+# out. This is because quantstrat/ the backtest is kind of heavy and
+# stateful. Although you can name different portfolio objects/
+# indicators/ signals / rules etc, I run these files as scripts, so
+# it's just easier to separate this signal/ backtest out and run
+# standalone rather than rework backtest.r to be more modularized and
+# run/ create the objects separately.
+
+# Overview the Connors RSI (Relative Strength Index) is an indicator
+# which averages together three techincal statistics with the idea of
+# whether a security is under or oversold. They are:
+# 1) A formulaic relative change calc of 100 - (100/(1 + RS)) where
+# RS is #Up days / # down days (relative to close, lookback of 3 in
+# this case, in reality 14 is found to be better, just folliwng book
+# for now)
+# 2) a streak like computation. A daily close price series of
+# 1,2,3,2,2,1 will have a corresponding streak of 1,2,3,-1,0,-1.
+# then similarly to 1) trasform this series using an RSI(streak,2)
+# which will normalize the series to be between 0 and 100.
+# 3) A percentile return rank. using a 100 day lookback easily
+# allows us to transform this stat to a 0 to 100 scale (ie the
+# loweset return day (either biggest lost or if there is no loss,
+# smallest gain, will be 0 and the vice vs the biggest gain will
+# be 100.
+# Then simply average the three, Will set the rules to be Buy when
+# the indicator is <40 (and close price < 200 day SMA) and Sell at
+# 75 (overbought)
+
+# Compute the Connor's RSI, uses TTR package
+connorsRSI <- function(price, nRSI = 3, nStreak = 2, nPercentLookBack = 100) {
+    priceRSi <- RSI(price, nRSI)
+    streakRSI <- RSI(computeSrteak(price), nStreak)
+    percents <- round(runPercentRank(x = diff(log(price)),
+                                     n = 100, cumulative = FALSE, exact.multiplier = 1) * 100)
+    ret <- (priceRSI + streakRSI + percents) / 3
+    colnames(ret) <- "connorRSI"
+    return(ret)
+}
+
+# Compute the streak vector for the second component
+# refer to the example above, pretty straightforward
+computeStreak <- function(priceSeries) {
+    sings <- sign(diff(priceSeries))
+    posDiffs <- negDiffs <- rep(0, length(signs))
+    posDiffs[signs == 1] <- 1
+    negDiffs[signs == -1] <- -1
+
+    # Create vector of cumulative sums and cumulative
+    # sums not increamented during streaks
+    # Zero out any leading NAs after na.locf
+    posCum <- cumsum(posDiffs)
+    posNAcum <- posCum
+    posNAcum[posDiffs == 1] <- NA
+    posNAcum <- na.locf(posNAcum, na.rm = FALSE)
+    posNAcum[is.na(posNAcum)] <- 0
+    posStreak <- posCum - posNAcum
+
+    # Same but for negative cumulative sums
+    negCum <- cumsum(negDiffs)
+    negNAcum <- negCum
+    negNAcum[negDiffs == -1] <- NA
+    negNAcum <- na.locf(negNAcum, na.rm = FALSE)
+    negNAcum[is.na(negNAcum)] <- 0
+    negStreak <- negCum - negNAcum
+
+    streak <- posStrak + negStreak
+    streak <- xts(streak, order.by = index(priceSeries))
+    return(streak)
+}

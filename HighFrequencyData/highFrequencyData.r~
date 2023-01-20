@@ -1,0 +1,43 @@
+#####################################################################
+########### High Frequency Data Handling and Evaluation #############
+#####################################################################
+
+
+# We don't have the 1GB example csv from Tick Data, Inc. I'll mock up
+# the data as needed/ as best I can
+
+# spy_file <- "path/Stocks/QUOTES/SPY_2013_04_15_X_Q.asc"
+# spy_quotes <- read.csv(file = spy_file, header = FALSE, stringsAsFactors = FALSE_
+
+# note: book says 7.2 million rows
+spy_quotes <- data.frame(matrix(ncol = 21, nrow = 0))
+
+colnames(spy_quotes) <- c("date", "time", "exchange", "bid_price", "ask_price",
+                          "bid_size", "ask_size", "quote_condition", "mode",
+                          "market_maker_id", "sequence_number", "bid_exchange",
+                          "ask_exchange", "national_bbo_indicator",
+                          "nasdaq_bbo_indicator", "quote_cancel_correction",
+                          "quote_source", "short_sale_restriction_indicator",
+                          "limit_up_down_bbo_indicator_cqs",
+                          "limit_up_down_bbo_indicator_utp",
+                          "finra_adf_mpid_indicator"
+                          )
+
+# gotta put in some P's in the exchange column here so the next line doesn't filter everything
+# just picking a few out here
+# M = Chicago Stock Exchange, N = NYSE, P = NYSE Arca, Q = NASDAQ OMX, J = Direct Edge A, Z = BATS
+
+exchange_codes <- c("M", "N", "P", "Q", "J", "Z")
+
+spy_quotes$exchange <-  sample(exchange_codes, 7000000, replace=TRUE)
+
+# SPY's primary exchange is NYSE Arca, filter to only look at those
+spy_quotes_arca <- spy_quotes[spy_quotes$exchange %in% c("P"),
+                              c("date", "time", "bid_price", "ask_price", "bid_size", "ask_size")]
+
+# note, this book was written a wile ago and i'd probally just use a filter in dplyr:
+# library(dplyr)
+# spy_quotes_arca <- spyt_quote %>% filter(exchange == "P")
+# spy_quotes_arca <- spy_quotes_arca[,c("date", "time", "bid_price", "ask_price", "bid_size", "ask_size")]
+
+# transform into and xts object
