@@ -208,5 +208,166 @@ abline(v = mean(data), lwd = 2, lty = 2)
 dev.off()
 
 # the book points out that the trading day period is the most liquid with the spread almost always one tick
-
 spy_day <- spy_filtered[regular_trading]
+
+# calculate the "microprice" ie the weighted average of the bid ask mid price
+spy_micro_price <- (spy_day$bid_price * spy_day$bid_size + spy_day$ask_price*spy_day$ask_size) /
+  (spy_day$bid_size + spy_day$ask_size)
+
+# plot the micro price alongside the bid and ask prices
+
+par(mfrow = c(1,1))
+range <- 10000:10100
+title <- "Micro-price between bid-ask prices"
+plot(spy_day_ask_price[range],
+     ylim =c(min(spy_day$bid_price[range]),
+             max(spy_day$ask_price[range])),
+     main = title,
+     cex.main = 0.8,
+     cex.axis = 0.8,
+     cex.lab = 0.8)
+lines(spy_day$bid_price[range])
+lines(spy_micro_price[range],lty=2)
+
+
+spy_returns <- diff(log(spy_micro_price))
+
+# extreme leptokurtocity of returns
+par(mfrow = c(2,1))
+plot(spy_returns,
+     main = "Times series plot of micro-price returns",
+     cex.main = 0.8, cex.lab = 0.8, cex.axis = 0.8)
+hist(spy_returns, breaks = 1000,
+     main = "Micro-price distribution",
+     cex.main = 0.8, cex.lab = 0.8, cex.axis = 0.8)
+
+# superimpose a normal distribution
+par(mfrow = c(1,1))
+mean_spy <- mean(as.numeric(spy_returns), na.rm = TRUE)
+sd_spy <- sd(as.numeric(spy_returns), na.rm = TRUE)
+
+hist(spy_returns, breaks = 10000, prob = TRUE,
+     xlim = c(-0.00003, 0.00003),
+     main = "Micro-price distribution vs Normal",
+     cex.main = 0.8, cex.lab = 0.8, cex.axis = 0.8)
+
+curve(dnorm(x, mean_spy, sd_spy), add = TRUE,
+      yaxt = "n", lwd = 3, lty = 3)
+
+# check autocorrelation of high frequency returns
+spy_acf <- acf(as.numeric(spy_returns),
+               na.action = na.pass,
+               main = "Autocorrelation",
+               cex.main = 0.8, cex.lab = 0.8, cex.axis = 0.8)
+
+# Let's take a look at the trades data now
+
+# TODO: mock up this data, either add noise to TAQ, or for some good statistical exercise create similar distributions. series.
+spy_trades <- read.csv("path", header=FALSE, stringsAsFactors=FALSE)
+
+names(spy_trades) <- c("date", "time", "price", "volume", "exchange", "sales_condition",
+                       "correction_indicator", "sequence_number",
+                       "trade_stop_indicator", "source_of_trade", "trf",
+                       "exclude_record_flag", "filtered_price")
+
+# Extract only the ARCA trades
+spy_trades_arca <- spy_trades[spy_trades$exchange %in% c("P"), c("date", "time", "price", "volume", "correction_indicator",
+                                                                 "filtered_price")]
+
+# check if any filtered prices exist
+any(!is.na(spy_trades_arca$filtered_price))
+
+# check iof there are any special correction indicators present
+unique(spy_trades_arca$correction_indicator)
+
+# drop the last two columns from the dataframe
+spy_trades_arca <- spy_trades_arca[, 1:4]
+
+# convert to a xts object for subsequent analysis
+time_index <- as.POSIXct(paste(spy_trades_arca$date,
+                               spy_trades_arca$time), format = "%m/%d/%Y %H:%M:%OS")
+
+spy_t <- xts(spy_trades_arca[,-c(1,2)], time_index)
+rm(time_index)
+
+# head(spy_t)
+
+# subset to regular trading hours
+regular_trading <- "2013-04-15 08:30:00::2013-04-15 16:15:00"
+spy_t_day <- spy_t[regular_trading]
+
+#dim(spy_t_day)
+#object.size(spy_t_day)
+
+# Compute returns
+spy_t_day_returns <- diff(log(spy_t_day$price))[-1]
+
+# plot the distribution and the autocorrelation plot
+par(mfrow = c(2,1))
+plot(spy_t_day_returns, main = "SPY returns on trades",
+     cex.main = 0.8, cex.lab = 0.8, cex.axis = 0.8)
+acf(as.numeric(spy_t_day_returns), main = "SPY trades acf",
+    cex.main = 0.8, cex.lab = 0.8, cex.axis = 0.8)
+
+# impose a normal distribution
+par(mfrow = c(1,1))
+hist(spy_t_day_returns, breaks = 1000, prob = TRUE,
+     xlim = c(-0.0001, 0.0001),
+     main = "Distribution of SPY trade returns",
+     cex.lab = 0.8, cex.axis = 0.8)
+
+curve(dnorm(x,
+            mean(spy_t_day_returns),
+            sd(spy_t,day_returns)),
+      add = TRUE,
+      yaxt = "n",
+      lwd = 3,
+      lty = 3)
+
+# Use the rle() function to find price sequences
+prices_rle <- rle(as.numeric(spy_t_day$price))
+
+# row indexed to keep
+end_indexes <- cumsum(prices_rle$lengths)
+
+# start indexes to sum the volumes from
+start_indexes <- end_indexes - prices_rle$lengths + 1
+
+# create a vector of total volumes for each p[rice
+volume_list <- list()
+volume_vector <- as.numeric(spy_t_day$volume)
+for (i in 1:length(end_indexes)) {
+  volume_list[[i]] <- sum(volume_vector[start_indexes[i]:
+                                        end_indexes[i]], na.rm = TRUE)
+}
+
+# create a reduced data set with distinct trade prices
+spy_t_day_reduced <- spy_t_day[end_indexes,]
+spy_t_day_reduced$volume <- unlist(volume_list)
+
+#head(spy_t_day_reduced, 10)
+#head(spy_t_day, 10)
+
+# nonlinear relationships between successive lags in return space?
+
+# Random cloud with lag 1
+n <- rnorm(50, 0, .20)
+n_lag_1 <- c(NA, n[-length(n)])
+plot(n_lag1, n)
+
+# create arrows between the points
+s <- seq(length(n)-1)
+arrows(n_lag1[s], n[s], n_lag1[s+1], n[s+1])
+
+# may reveal point sequences that spend more time traveling around the
+# edges of the cloud before diving back in toward the center
+
+# SPY return cloud with lag 1
+spy_t_returns <- diff(log(as.numeric(
+  spy_t_day_reduced$price[100:150])))
+spy_t_returns_lag1 <- c(NA, spy_t_returns[-length(spy_t_returns)])
+plot(spy_t_returns_lag1, spy_t_returns)
+
+s <- seq(length(spy_t_returns) - 1)
+arrows(spy_t_Returns_lag1[s], spy_t_returns[s],
+       spy_t_returns_lag1[s+1], spy_t_returns[s+1])
