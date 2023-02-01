@@ -1,0 +1,29 @@
+#####################################################################
+########################## Optimization #############################
+#####################################################################
+
+# Example of using first and second order derivatives to compute a min/max / optimal solutions
+
+# Create a function
+f <- function(x) {
+    return((1+x)^2)
+}
+
+# Create the derivatives
+fp <- function(x) {
+    return(2*(1+x))
+}
+
+# plot the function and its derivative
+x <- seq(-5, 5, 0.1)
+pdf("functionAndDerivative.pdf")
+plot(x, f(x), type ='l', lwd = 2,
+     main = "f(x) and f'(x)",
+     cex.main = 0.8,
+     cex.lab = 0.8,
+     cex.axis = 0.8)
+grid()
+lines(x,fp(x), lty = 3, lwd = 2)
+abline(h = 0)
+abline(v = 0)
+dev.off()
