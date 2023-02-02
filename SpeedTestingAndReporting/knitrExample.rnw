@@ -1,0 +1,44 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+
+\begin{document}
+
+This is an example LaTeX document with some embedded R code woven in for convenience.
+
+<<foo, fig.height = 4>>=
+x = 1:10
+y  = x ^ 2
+plot(x, y, main = "This is a graph")
+@
+
+Inline expressions can be written by using the
+\verb|\Sexpr{}| convention, e.g. $\pi=\Sexpr{pi}$
+and \Sexpr{2.3492e7} and \Sexpr{x / 2.0}.
+
+\subsection*{A different subsection}
+We can insert graphs without displaying the code.
+This can be done using the \texttt{echo = FALSE}
+command within the code chunk argument list.
+
+<<foo2, fig.height = 3, echo = FALSE>>=
+x = 1:10
+y = x ^ 3
+plot(x, y, main = "This is a second graph")
+@
+
+Any R code can be run within the code chunks
+provided by knitr. This next example loads up
+\texttt{ggplot2}, and the code creates a nice looking
+density histogram.
+
+<<foo3, fig.height = 6, tidy = FALSE >>=
+require(ggplot2)
+my_data = data.frame(returns = c(0.03, 0.04, 0.05,
+0.032, 0.01, 0.23, 0.4, 0.05, 0.066, 0.5),
+stock = c("SPY", "CVX", "SPY", "SPY", "XOM"))
+
+ggplot(my_data, aes(x = returns, fill = stock)) +
+geom_density(alpha = 0.2)
+@
+
+\end{document}

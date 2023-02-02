@@ -1,0 +1,14 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+
+\begin{document}
+
+This is an example LaTeX document with some embedded R code woven in for convenience.
+
+<<foo, fig.height = 4>>=
+x = 1:10
+y  = x ^ 2
+plot(x, y, main = "This is a graph")
+@
+
+\end{document}

@@ -1,0 +1,69 @@
+#####################################################################
+###############Speed, Testing, and Reporting ########################
+#####################################################################
+
+# Vectorized code is prefered over explicit looping
+sum_with_loop_in_r <- function(max_value) {
+    sum <- 0
+    for(i in 1:max_value){
+        sum <- sum + i
+    }
+    return(sum)
+}
+
+sum_with_vectorization_in_r <- function(max_value) {
+    numbers <- as.double(1:max_value)
+    return(sum(numbers))
+}
+
+# Benchmarking
+library(microbenchmark)
+
+speedtest <- microbenchmark(loop = sum_with_loop_in_r(1e5),
+                            vectorized = sum_with_vectorization_in_r(1e5)
+                            )
+
+# By default R code is interpreted. We can also compile code in r do reduce runtime, and port compiled code from machine to machine
+library(compiler)
+compiled_sum_with_loop_in_r <- cmpfun(sum_with_loop_in_r)
+compiled_sum_with_vectorization_in_r <- cmpfun(sum_with_vectorization_in_r)
+
+compiled_speedtest <- microbenchmark(loop = sum_with_loop_in_r(1e5),
+                                     compiled_loop = compiled_sum_with_loop_in_r(1e5),
+                                     vectorized = sum_with_vectorization_in_r(1e5),
+                                     compiled_vectorized = compiled_sum_with_vectorization_in_r(1e5)
+                                     )
+
+# I think either some of the code is compiled behind the scene/ precompiles sum
+# but the compiled vs not doesn't make that big of a difference here
+
+# example of Rccp compiled language call
+library(Rcpp)
+
+# Create a C++ function
+cppFunction('
+long add_cpp(long max_value) {
+  long sum = 0;
+  for(long i = 1; i <= max_value; ++i) {
+    sum = sum + i;
+  }
+  return sum;
+}'
+)
+
+s <- add_cpp(1e5)
+
+cpp_speedtest <- microbenchmark(loop = sum_with_loop_in_r(1e5),
+                                compiled_loop = compiled_sum_with_loop_in_r(1e5),
+                                vectorized = sum_with_vectorization_in_r(1e5),
+                                compiled_vectorized = compiled_sum_with_vectorization_in_r(1e5),
+                                compiled_cpp = add_cpp(1e5)
+                                )
+
+# my results are still different (like ordering) than the book. I think the book is kinda old and advancements to r
+# have been made enough so that basic stuff is like just as fast/ can't tell speedup in some cases.
+
+# sourcing a separate .cpp file into r:
+sourceCpp('./add_2.cpp')
+
+cpp_test <- add_2_cpp(100)
