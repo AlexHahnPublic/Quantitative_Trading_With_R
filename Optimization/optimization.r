@@ -308,8 +308,8 @@ dev.off()
 library(DEoptim)
 
 # Drawdown function
-compute_drawdown <- function(x, returns_default = TRUE, geommetric = TRUE) {
-    browser()
+compute_drawdown <- function(x, returns_default = TRUE, geometric = TRUE) {
+    #browser()
     # x = Vector of raw pnl or returns
     # If returns_default = FALSE, the grometric argument is ignored and pnl is used
     # Output = the maximum drawdown
@@ -321,7 +321,7 @@ compute_drawdown <- function(x, returns_default = TRUE, geommetric = TRUE) {
         } else {
             cumulative_return <- 1 + cumsum(x)
         }
-        max_cumulative_return <- cummax(c(1, cumulative_return))[-1]
+        max_cumulative_return <- cummax(c(1, cumulative_return))[-1] # running biggest cummulative max ie cummax(c(3,4,3,2,1,5)) = c(3,4,4,4,4,5)
         drawdown <- -(cumulative_return / max_cumulative_return - 1)
     } else {
         # PnL vector is used
@@ -335,6 +335,7 @@ compute_drawdown <- function(x, returns_default = TRUE, geommetric = TRUE) {
 }
 
 obj_max_drawdown <- function(w, r_matrix, small_weight) {
+    #browser()
     # w is the weight of every stock
     # r_matrix is the returns matrix of all stocks
 
@@ -361,7 +362,16 @@ obj_max_drawdown <- function(w, r_matrix, small_weight) {
 
 # Calculate a returns matrix for multiple stocks
 symbol_names <- c("AXP", "BA", "CAT", "CVX", "DD", "DIS", "GE", "HD", "IBM",
-                  "INTC", "KO", "MMM", "MRK", "PG", "T", "UTX", "VZ")
+                  "INTC", "KO", "MMM", "MRK", "PG", "T",
+                  #"UTX",#UTX is now Raytheon and I'm taking out of example,
+                  "VZ")
+library(lubridate)
+# Book leaves this part out but let's use some early chapter code to fetch prices
+# looking at the chart at the end of the chapter date range is roughly 20070101 to 20140301
+# similar to before, only run once to get data into memory, if loading script/ developing/
+# researching, no need to reload each time
+#getSymbols(symbol_names, verbose = TRUE, src = "yahoo", from = ymd(20070101), to = ymd(20140301))
+
 
 # Load these prices into memory
 price_matrix <- NULL
@@ -382,11 +392,52 @@ small_weight_value <- 0.02
 lower <- rep(0, ncol(returns_matrix))
 upper <- rep(1, ncol(returns_matrix))
 
-optim_result <- DEoptim(obj_max_drawdown, lower, upper,
-                        control = list(NP = 400,
-                                       itermax = 300,
-                                       F = 0.25,
-                                       CR = 0.75
-                                       #, trace = FALSE # disable display output
-                                       ),
-                        returns_matrix, small_weight_value)
+# similar to other computationally intesive lines, if iterating/ on this script, only need to optimize once, otherwise comment this out
+## optim_result <- DEoptim(obj_max_drawdown, lower, upper,
+##                         control = list(NP = 400,
+##                                        itermax = 300,
+##                                        F = 0.25,
+##                                        CR = 0.75
+##                                        #, trace = FALSE # disable display output
+##                                        ),
+##                         returns_matrix, small_weight_value)
+
+weights <- optim_result$optim$bestmem # These are the optimal weights for the n assets (16)
+
+natural.leverage <- sum(weights) #.96 sometimes also called inherent leverage
+
+# normalize, weights #fine as long as close to unit gmv to start
+weights <- weights / sum(weights) #need to abs or use norms if short weights allowed, we constrain it so no need
+
+# Check Differential Evoltion max drawdawn optimized portfolio vs equal weights to check improvement
+
+# Equally weighted portfolio
+equal_weights <- rep(1/16, 16)
+equal_portfolio <- returns_matrix %*% equal_weights
+equal_portfolio_cumprod <- cumprod(1 + equal_portfolio)
+
+# Optimal max drawdown portfolio
+optimized_portfolio <- returns_matrix %*% weights
+drawdown_portfolio_cumprod <- cumprod(1 + optimized_portfolio)
+
+pdf("maxDrawdownDEOptimizedvsEqualWeightedCumRets.pdf")
+main_title <- "Equal vs. Optimized Weights"
+plot(drawdown_portfolio_cumprod, type='l', col = "green", xaxt = 'n',
+     main = main_title, xlab = "", ylab = "cumprod(1+r)")
+lines(equal_portfolio_cumprod, col="red", lty=3)
+grid(col='black')
+
+# Set x-axis labels
+label_location <- seq(1, length(drawdown_portfolio_cumprod),
+                      by = 90)
+labels <- rownames(returns_matrix)[label_location]
+axis(side=1, at=label_location, labels=labels,
+     las = 2, cex.axis=0.8)
+dev.off()
+
+equal_weighted_drawdown <- max(compute_drawdown(equal_portfolio))
+
+de_opt_drawdown <- max(compute_drawdown(optimized_portfolio))
+
+# This doesn't seem better, had to diverge a little from book due to stale
+# data but should see some improvement in sample... will look into
